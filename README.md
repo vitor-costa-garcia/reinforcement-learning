@@ -22,4 +22,4 @@ This repository is meant to guide my study in reinforcement learning and related
 |16. Applications                              |Not started |              |Not yet        |
 |17. Frontiers                                 |Not started |              |Not yet        |
 
-
+The book can be found on the writers repository: http://incompleteideas.net/book/
