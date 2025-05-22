@@ -1,11 +1,11 @@
-## *Exercise 2.1*
+## **Exercise 2.1**
 Since E = 0.5, the probability of choosing the optimal action instead of choosing an action randomly is 1 - E = 0.5
 In the case of two actions, the probability of choosing the optimal one randomly is 0.5
 The probability to choose the optimal action in a E-greedy algorithm in given by the probability of choosing
 the optimal action + the chance of choosing an action randomly * the probability of choosing the optimal action randomly
 which equals 0.5 + (0.5 * 0.5) = 0.75
 
-## *Exercise 2.2*
+## **Exercise 2.2**
 When checking each timestep individually:
 * t = 1 - POSSIBLY EXPLORATORY
 All action value estimates are zero, so there's no way to know if the action taken by the method was greedy or exploratory, since
@@ -34,3 +34,19 @@ The action chosen was A5 = 3, which isn't the one with highest action value esti
 The reward was R5 = 0.
 
 So we can conclude that E case happened for sure at t = 4 and t = 5, and possibly happened at t = 1 and t = 2.
+
+## **Exercise 2.4**
+
+
+## **Exercise 2.5**
+
+![Non stationary](images/nonstationary_avgreward.png)
+![Non stationary, a=0.1](images/nonstationary_a10e-1.png)
+
+It's easy to see that the nonstationary problem with the average reward estimator performs as usual at the start, but when the true rewards starts changing, performance falls,
+while the incremental estimator maintains performance.
+
+## **Exercise 2.6**
+The optimistic approach starts worst because its explorating all actions, thus doesn't focus on the optimal action right of the bat.
+We can see spikes at the starting steps because given the initial values of the estimatives, all tasks, the optimal one aswell, will probably be
+selected some times in a row since it's averaging the estimatives.
