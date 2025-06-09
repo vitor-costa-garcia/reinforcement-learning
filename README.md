@@ -7,8 +7,8 @@ This repository is meant to guide my study in reinforcement learning and related
 |1. Introduction                               |Finished    |20/05/2025    |
 |2. Multi-armed Bandits                        |Finished    |27/05/2025    |
 |3. Finite MDPs                                |Finished    |29/05/2025    |
-|4. Dynamic Programming                        |Ongoing     |              |
-|5. Monte Carlo Methods                        |Not started |              |
+|4. Dynamic Programming                        |Finished    |09/06/2025    |
+|5. Monte Carlo Methods                        |Ongoing     |              |
 |6. TD Learning                                |Not started |              |
 |7. n-steps Bootstrapping                      |Not started |              |
 |8. Planning and Learning with Tabular Methods |Not started |              |
