@@ -1,4 +1,5 @@
 import random as rnd
+import numpy as np
 
 SUITS = ["Diamonds", "Spades", "Hearts", "Clubs"]
 VALUES = {"Ace":11, "Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Queen":10, "Jack":10, "King":10}
@@ -49,33 +50,34 @@ class BlackJackEnv:
     def __init__(self):
         self.deck = generate_deck()
 
-    def run_episode(self, policy, starting_state = None):
+    def run_episode(self, policy):
         episode = []
+
         dealer = Person()
         player = Person()
 
-        if not starting_state:
+        while player.hand_val < 12:
+            dealer = Person()
+            player = Person()
             for _ in range(2):
                 dealer.add_card(self.deck[rnd.randint(0, len(self.deck)-1)])
                 player.add_card(self.deck[rnd.randint(0, len(self.deck)-1)])
 
-            current_state = {
-                                "hand_sum": player.hand_val,
-                                "dealer_card": dealer.hand[0].value,
-                                "usable_aces": player.usable_aces
-                            }
-        else:
-            player.hand_val = starting_state['hand_val']
-            dealer.add_card(Card("Clubs", starting_state['dealer_card']))
-            player.usable_aces = starting_state['usable_aces'] #Melhorar este codigo
+        current_state = {
+                            "hand_sum": player.hand_val,
+                            "dealer_card": dealer.hand[0].value,
+                            "usable_aces": player.usable_aces
+                        }
+
+        random_action = np.random.randint(0,2)
 
         if player.hand_val == 21:
             if dealer.hand_val == 21:
                 #print("Draw natural")
-                episode.append((current_state, -1, 0))
+                episode.append((current_state, 1, 0))
             else:
                 #print("Won natural")
-                episode.append((current_state, -1, 1))
+                episode.append((current_state, 1, 1.5))
             return episode
 
         #for card in player.hand:
@@ -87,7 +89,13 @@ class BlackJackEnv:
                              "usable_aces": player.usable_aces
                             }
 
-            action = access_states(policy, **current_state)
+            if len(episode) == 0:
+                action = random_action
+            else:
+                action = access_states(policy, **current_state)
+
+            if player.hand_val == 21: #Stick
+                break
 
             if action == 0: #Hit
                 card = self.deck[rnd.randint(0, len(self.deck)-1)]
@@ -120,3 +128,9 @@ class BlackJackEnv:
         #print("Lost")
         episode.append((current_state, 1, -1))
         return episode
+    
+if __name__ == "__main__":
+    policy = np.zeros(shape=(10,10,2))
+    bj = BlackJackEnv()
+    for _ in range(10000):
+        episode = bj.run_episode(policy)
