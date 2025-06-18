@@ -50,7 +50,7 @@ class BlackJackEnv:
     def __init__(self):
         self.deck = generate_deck()
 
-    def run_episode(self, policy):
+    def run_episode(self, policy, return_hand = False):
         episode = []
 
         dealer = Person()
@@ -68,6 +68,9 @@ class BlackJackEnv:
                             "dealer_card": dealer.hand[0].value,
                             "usable_aces": player.usable_aces
                         }
+        if return_hand:
+            current_state["player_hand"] = player.hand
+            current_state["dealer_hand"] = dealer.hand
 
         random_action = np.random.randint(0,2)
 
@@ -88,11 +91,15 @@ class BlackJackEnv:
                              "dealer_card": dealer.hand[0].value,
                              "usable_aces": player.usable_aces
                             }
+            if return_hand:
+                current_state["player_hand"] = player.hand
+                current_state["dealer_hand"] = dealer.hand
 
             if len(episode) == 0:
                 action = random_action
             else:
-                action = access_states(policy, **current_state)
+                action = access_states(policy, current_state['hand_sum'], current_state['dealer_card'], current_state['usable_aces'])
+                action = rnd.choices([0, 1], action)[0]
 
             if player.hand_val == 21: #Stick
                 break
