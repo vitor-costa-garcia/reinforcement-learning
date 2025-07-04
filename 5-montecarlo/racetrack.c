@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
+#include <string.h>
 
 #define TRACK_HEIGHT 20
 #define TRACK_WIDTH 10
@@ -12,6 +14,11 @@
 #define END 3
 
 #define MAX_V 4
+#define MIN_V -4
+
+#define V_RANGE (MAX_V - MIN_V + 1)
+#define N_STATES TRACK_HEIGHT*TRACK_WIDTH*V_RANGE*V_RANGE
+#define N_ACTIONS 9
 
 typedef struct {
     int map[TRACK_HEIGHT][TRACK_WIDTH];
@@ -88,37 +95,38 @@ void showTrack(int track[TRACK_HEIGHT][TRACK_WIDTH]){
 }
 
 int getIndex(int h, int w, int v_x, int v_y) {
-    return ((((h * TRACK_WIDTH + w) * (MAX_V + 1) + v_x) * (MAX_V + 1) + v_y) * 9);
+    return (((h * TRACK_WIDTH + w) * V_RANGE + (v_x + 4)) * V_RANGE + (v_y + 4)) * N_ACTIONS;
 }
 
 int weightedActionChoice(float* actions, int nA){
-    float max = -1;
     int i = 0;
     float* weightedActions = malloc(sizeof(float)*nA);
+    float total = 0;
 
     for(i = 0; i < nA; i++){
         weightedActions[i] = actions[i] * (float)(i+1);
-        if(weightedActions[i] > max){
-            max = weightedActions[i];
-        };
+        total += weightedActions[i];
     }
 
-    float r = ((float)rand() / (float)RAND_MAX) * max;
+    float r = ((float)rand() / (float)RAND_MAX) * total;
 
     float cumulative = 0;
     for (int i = 0; i < nA; i++) {
-        cumulative = weightedActions[i];
+        cumulative += weightedActions[i];
+        //printf("r:%f cumulative:%f wa:%f\n", r, cumulative, weightedActions[i]);
         if (r <= cumulative) {
+            free(weightedActions);
             return i;
         }
     }
 
+    free(weightedActions);
     return nA - 1;
 }
 
 
 float* createRandomPolicy(){
-    int size = TRACK_HEIGHT*TRACK_WIDTH*(MAX_V+1)*(MAX_V+1)*9;
+    int size = TRACK_HEIGHT*TRACK_WIDTH*V_RANGE*V_RANGE*9;
     float* pol = malloc(sizeof(float)*size);
 
     for(int i = 0; i < size; i++){
@@ -198,14 +206,18 @@ Step* runEpisode(Track track, float* policy){
     while(track.map[kart.pos[1]][kart.pos[0]] != 3){
         float* actions = &policy[getIndex(kart.pos[1], kart.pos[0], kart.v[0], kart.v[1])];
 
-        actionI = weightedActionChoice(zeroInvalidActions(kart, actions, 9), 9);
+        float* fixedInvalidActions = zeroInvalidActions(kart, actions, 9);
+        actionI = weightedActionChoice(fixedInvalidActions, 9);
+        free(fixedInvalidActions);
 
         //Save old state
         oldState.x = kart.pos[0]; oldState.y = kart.pos[1]; oldState.vx = kart.v[0]; oldState.vy = kart.v[1];
 
-        //Accelerating 
-        kart.v[0] += available_actions[actionI][0];
-        kart.v[1] += available_actions[actionI][1];
+        //Accelerating with .1 probability of failing
+        if(rand()%10 != 0){
+            kart.v[0] += available_actions[actionI][0];
+            kart.v[1] += available_actions[actionI][1];
+        }
 
         //Checking for velocity roof
         if(kart.v[0] > MAX_V) kart.v[0] = MAX_V;
@@ -237,7 +249,77 @@ Step* runEpisode(Track track, float* policy){
 
     //When while loop ends, episode is terminated
     episode = createStep(oldState, actionI, 0, counter, episode);
+    free(kart.pos);
+    free(kart.v);
     return episode;
+}
+
+void printEpisode(Step* episode){
+    while(episode){
+        printf("x:%d, y:%d, vx:%d, vy:%d, action:%d, reward:%d, timestep:%d\n", episode->eState.x,
+                                                                                episode->eState.y,
+                                                                                episode->eState.vx,
+                                                                                episode->eState.vy,
+                                                                                episode->eAction,
+                                                                                episode->eReward,
+                                                                                episode->t);
+        episode = episode -> nextStep;
+    }
+};
+
+int argmaxA(float* actions, int nA){
+    int maxI = -1; float maxQ = -1;
+    for(int i = 0; i < nA; i++){
+        if(actions[i] > maxQ || maxI == -1){
+            maxQ = actions[i];
+            maxI = i;
+        }
+    }
+
+    return maxI;
+};
+
+void onPolicyFVMC_eGreedy(Track track, int runs, float* policy, float gamma, float epsilon){
+    bool* seenBuffer = malloc(sizeof(bool)*N_STATES*N_ACTIONS);
+    unsigned int* returnsCount = malloc(sizeof(unsigned int)*N_STATES*N_ACTIONS);
+    float* qValues = malloc(sizeof(float)*N_STATES*N_ACTIONS);
+    memset(qValues, 0, sizeof(float) * N_STATES * N_ACTIONS);
+    memset(returnsCount, 0, sizeof(unsigned int) * N_STATES * N_ACTIONS);
+    
+    for(int run = 0; run < runs; run++){
+        memset(seenBuffer, 0, sizeof(bool) * N_STATES * N_ACTIONS);
+        if(run%2500==0)printf("Episode: %d\n",run);
+        Step* episode = runEpisode(track, policy);
+        if (!episode) continue;  //Who knows
+        float g = 0;
+        while(episode){
+            g = gamma * g + episode -> eReward;
+            int iStateAction = getIndex(episode->eState.y, episode->eState.x, episode->eState.vx, episode->eState.vy) + episode->eAction;
+            if(seenBuffer[iStateAction] == false){
+                seenBuffer[iStateAction] = true;
+                returnsCount[iStateAction]++;
+                qValues[iStateAction] = qValues[iStateAction] + (g - qValues[iStateAction])/returnsCount[iStateAction];
+                int optimalAction = argmaxA(&qValues[iStateAction - episode->eAction], N_ACTIONS);
+
+                //Updating policy
+                for(int i = 0; i < N_ACTIONS; i++){
+                    if(i == optimalAction){
+                        policy[iStateAction - episode -> eAction + i] = 1 - epsilon + (epsilon/N_ACTIONS);
+                    } else {
+                        policy[iStateAction - episode -> eAction + i] = epsilon/N_ACTIONS;
+                    }
+                }
+            }
+
+            Step* oldEpisode = episode;
+            episode = episode -> nextStep;
+            free(oldEpisode);
+        }
+    }
+
+    free(seenBuffer);
+    free(returnsCount);
+    free(qValues);
 }
 
 int main(){
@@ -248,19 +330,13 @@ int main(){
     showTrack(track.map);
     float* randomPolicy = createRandomPolicy();
 
-    int runs = 1;
+    int runs = 100000;
 
-    for(int i = 0; i < runs; i++){
-        Step* episode = runEpisode(track, randomPolicy);
-        while(episode){
-            printf("x:%d, y:%d, vx:%d, vy:%d, action:%d, reward:%d, timestep:%d\n", episode->eState.x,
-                                                                                    episode->eState.y,
-                                                                                    episode->eState.vx,
-                                                                                    episode->eState.vy,
-                                                                                    episode->eAction,
-                                                                                    episode->eReward,
-                                                                                    episode->t);
-            episode = episode -> nextStep;
-        }
-    }
+    onPolicyFVMC_eGreedy(track, runs, randomPolicy, 0.99, 0.05);
+    Step* optimalEpisode = runEpisode(track, randomPolicy);
+    printEpisode(optimalEpisode);
+
+    free(randomPolicy);
+    free(track.end);
+    free(track.start);
 }
