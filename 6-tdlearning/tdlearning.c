@@ -17,7 +17,7 @@ void TDupdate(float* qvalues, float stepsize, float gamma, float r, int s, int n
 	qvalues[s] += stepsize*(r + gamma * qvalues[ns] - qvalues[s]);
 };
 
-float* randomWalkTemporalDifference(unsigned int runs){
+float* randomWalkTemporalDifference(unsigned int runs, float a){
 	float* qvalues;
 	qvalues = malloc(sizeof(float)*7);
 	for(int i = 1; i < 6; i++){
@@ -25,7 +25,6 @@ float* randomWalkTemporalDifference(unsigned int runs){
 	}
 	qvalues[0]=0;qvalues[6]=0;
 
-	float a = 0.1;
 	float gamma = 1;
 
 	for(int i = 0; i < runs; i++){
@@ -59,8 +58,9 @@ float* randomWalkTemporalDifference(unsigned int runs){
 int main(){
 	float qreal[7] = {0, 1.0/6, 2.0/6, 3.0/6, 4.0/6, 5.0/6, 0};
 	float qestimated[] = {0, 0, 0, 0, 0, 0, 0};
-	int episodes = 0;
-	int runs = 0;
+	int episodes;
+	int runs;
+	float stepsize;
 	float rsme_total = 0;
 
 	printf("Episodes: ");
@@ -69,8 +69,11 @@ int main(){
 	printf("Runs: ");
 	scanf("%d", &runs);
 
+	printf("Stepsize: ");
+	scanf("%f", &stepsize);
+
 	for(int run = 0; run < runs; run++){
-		float* qvalues = randomWalkTemporalDifference(episodes);
+		float* qvalues = randomWalkTemporalDifference(episodes, stepsize);
 		float rsme = 0;
 
 		for(int j = 0; j < 7; j++){
