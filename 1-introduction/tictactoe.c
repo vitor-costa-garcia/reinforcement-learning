@@ -11,10 +11,53 @@ Non terminal state -> R = 0;
 Off-policy Q-learning
 
 State will be represented as an 1D array of length 9
-1  -> X
-0  -> O
--1 -> Empty
+2  -> X
+1 -> O
+0 -> Empty
 */
+
+#define TABLE_SIZE 1009
+
+int encodeBoard(int* board){
+	unsigned int hash = 0;
+	for(int i = 0; i < 9; i++){
+		hash = hash*7 + board[i];
+	}
+	return hash;
+}
+
+float* hashFunction(float* policy, int* board){
+	return policy[encodeBoard(board)%TABLE_SIZE];
+}
+
+float** initializeQTable(){
+	float** qTable = malloc(sizeof(float*)*TABLE_SIZE);
+	for(int i = 0; i < TABLE_SIZE; i++){
+
+		qTable[i] = malloc(sizeof(float)*9);
+
+		for(int j = 0; j < 9; j++){
+			qTable[i][j] = 0.0;
+		}
+
+	}
+
+	return qTable;
+}
+
+int getCurrentBestAction(float* qTableRow){
+	int currentBestAction = 0;
+	float currentBestActionQValue = qTableRow[0];
+
+	for(int i = 1; i < 9; i++){
+		if(qTableRow[i] > currentBestActionQValue){
+			currentBestActionQValue = qTableRow[i];
+			currentBestAction = i;
+		}
+	}
+
+	return currentBestAction;
+}
 
 void printBoard(int* board){
 	for(int i = 0; i < 5; i+=3){
@@ -86,15 +129,59 @@ void cannonical_state(int* board){
 	free(currboard);
 };
 
+bool checkBoardWin(int* board, int marker){
+	for(int i = 0; i < 3; i++){
+		if(board[0+(i*3)]==marker &&
+		   board[1+(i*3)]==marker &&
+		   board[2+(i*3)]==marker){
+			return true;
+		}
 
+		if(board[0+i]==marker &&
+		   board[3+i]==marker &&
+		   board[6+i]==marker){
+			return true;
+		}
+	}
+
+	if(board[0]==marker && board[4]==marker && board[8]==marker){
+		return true;
+	}
+
+	if(board[2]==marker && board[4]==marker && board[6]==marker){
+		return true;
+	}
+
+	return false;
+}
+
+void playAction(int* board, int position, int marker){
+	//Marker 1-X Marker 0-O
+	board[position] = marker;
+}
+
+int* initializeBoard(){
+	int* board = malloc(sizeof(int)*9);
+	for(int i = 0; i < 9; i++){board[i]=0;}
+	return board;
+}
+
+void runEpisode(float** qTable, float stepsize, float discount){
+	int* board = initializeBoard();
+	int turn = (rand()%2)+1; 
+	while(checkBoardWin(board, 1) && checkBoardWin(board, 2)){
+		
+	}
+}
 
 
 int main(){
-	int* board = malloc(sizeof(int)*9);
-	for(int i = 0; i < 9; i++){board[i]=-1;};
-	board[0]=1;
-	board[4]=1;
-	board[8]=1;
+	int* board = initializeBoard();
+	playAction(board, 0, 1);
+	playAction(board, 1, 2);
+	playAction(board, 4, 1);
+	playAction(board, 2, 2);
+	playAction(board, 8, 1);
 
 	printBoard(board);
 	cannonical_state(board);
