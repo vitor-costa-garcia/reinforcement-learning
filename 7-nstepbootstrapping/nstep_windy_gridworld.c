@@ -11,7 +11,7 @@
 #define NACTIONS 8
 
 #define DISCOUNT 1
-#define STEPSIZE 0.5
+#define STEPSIZE 0.01
 
 #define N 10
 
@@ -23,7 +23,7 @@ typedef struct{
 typedef struct{
 	State state;
 	int action;
-	int reward;
+	float reward;
 } Timestep;
 
 int min_int(int a, int b) {
@@ -44,7 +44,7 @@ void walk(int* pos, int wind[WIDTH], int action){
 	};
 
 	//Wind going north with 70% chance (Stochastic part)
-	if(rand() % 10 < 5){
+	if(rand() % 10 < 7){
 		pos[1] -= wind[pos[0]];
 	}
 
@@ -102,10 +102,10 @@ int eGreedyPolicyAction(float epsilon, int* pos, float*** qTable){
 
 void saveTimestep(Timestep* timestep, int n, int x, int y, int a, int r){
 	for(int i = n-1; i > 0; i--){
-		timestep[i-1].state.x = timestep[i].state.x;
-		timestep[i-1].state.y = timestep[i].state.y;
-		timestep[i-1].action = timestep[i].action;
-		timestep[i-1].reward = timestep[i].reward;
+		timestep[i].state.x = timestep[i-1].state.x;
+		timestep[i].state.y = timestep[i-1].state.y;
+		timestep[i].action = timestep[i-1].action;
+		timestep[i].reward = timestep[i-1].reward;
 	}
 
 	timestep[0].state.x = x;
@@ -140,32 +140,42 @@ void runEpisode_NStepSarsa(float*** qTable){
 
 	bool terminal = false;
 
-	printf("Start episode!");
+	//printf("Start episode!");
 	while(t_updt != T - 1){
 		//printf("t:%d | T:%d | t_updt:%d | currx: %d | curry: %d\n", t, T, t_updt, currentPos[0], currentPos[1]);
 		if(t < T){
 			if(!terminal){
-				int action = eGreedyPolicyAction(0.05, currentPos, qTable);
-				saveTimestep(lastTimestep, N, currentPos[0], currentPos[1], action, -1);
+				int prevX = currentPos[0]; int prevY = currentPos[1];
+				int action = eGreedyPolicyAction(0.1, currentPos, qTable);
+				float reward = -1;
 				walk(currentPos, wind, action);
 				if(currentPos[0] == endPos[0] && currentPos[1] == endPos[1]){
 					T = t + 1;
 					terminal = true;
-					printf("Terminal State!\n");
+					reward = 0;
+					//printf("Terminal State!\n");
 				}
+				saveTimestep(lastTimestep, N, prevX, prevY, action, reward);
 			}
 		}
 		t_updt = t - N + 1;
+		//if(terminal){
+		//	printf("%d\n", T - t_updt);
+		//}
 		if(t_updt >= 0){
 			g = 0;
 			for(int i = t_updt + 1; i < min_int(t_updt + N, T); i++){
-				g += pow(DISCOUNT, i-t_updt-1)*-1;
+				//printf("index_forloop:%d | reward:%f\n",(N-1)-(i-t_updt-1)-1, lastTimestep[(N-1)-(i-t_updt-1)-1].reward);
+				g += pow(DISCOUNT, i-t_updt-1)*lastTimestep[(N-1)-(i-t_updt-1)-1].reward; //truncated return
 			}
 			if(t_updt + N < T){
-				g += pow(DISCOUNT, N)*qTable[lastTimestep[N-1].state.x][lastTimestep[N-1].state.y][lastTimestep[N-1].action];
+				//printf("YES\n");
+				g += pow(DISCOUNT, N)*qTable[lastTimestep[0].state.x][lastTimestep[0].state.y][lastTimestep[0].action];
 			}
-			qTable[lastTimestep[0].state.x][lastTimestep[0].state.y][lastTimestep[0].action] += 
-			STEPSIZE*(g - qTable[lastTimestep[0].state.x][lastTimestep[0].state.y][lastTimestep[0].action]);
+			//printf("g: %f\n", g);
+			int i_u = (min_int(t_updt + N, T) - t_updt) - 1;
+			qTable[lastTimestep[i_u].state.x][lastTimestep[i_u].state.y][lastTimestep[i_u].action] += 
+			STEPSIZE*(g - qTable[lastTimestep[i_u].state.x][lastTimestep[i_u].state.y][lastTimestep[i_u].action]);
 		}
 		t++;
 	}
@@ -174,28 +184,40 @@ void runEpisode_NStepSarsa(float*** qTable){
 	free(currentPos);
 }
 
-void printStateVal(float*** qTable){
+void printStateVal(float*** qTable, int endpos[2]){
 	for(int i = 0; i < HEIGHT; i++){
 		for(int j = 0; j < WIDTH; j++){
 			float* qTableRow = qTable[j][i];
 			float maxQVal = -INFINITE;
+			int maxAct = -1;
 			for(int k = 0; k < NACTIONS; k++){
 				if(qTableRow[k] > maxQVal){
 					maxQVal = qTableRow[k];
+					maxAct = k;
 				}
 			}
-			printf("[%.2f] ", maxQVal);
+			if(i==endpos[1] && j == endpos[0]){
+				printf("[E] ");
+			} else {
+				printf("[%d] ", maxAct);
+				//printf("[%.1f] ", maxQVal);
+			}
 		}
 		printf("\n");
 	}
 }
 
 int main(){
+	srand(time(NULL));
 	float*** qTable = initializeQTable();
-	int episodes = 1000;
+	int episodes = 100000;
 
 	for(int i = 0; i < episodes; i++)
 		runEpisode_NStepSarsa(qTable);
 
-	printStateVal(qTable);
+	int endpos[2] = {16, 7};
+	printStateVal(qTable, endpos);
+
+	freeQTable(qTable);
+	free(qTable);
 }
