@@ -9,9 +9,9 @@ This repository is meant to guide my study in reinforcement learning and related
 |3. Finite MDPs                                |Finished    |29/05/2025    |
 |4. Dynamic Programming                        |Finished    |09/06/2025    |
 |5. Monte Carlo Methods                        |Finished    |04/07/2025    |
-|6. TD Learning                                |Ongoing     |              |
-|7. n-steps Bootstrapping                      |Not started |              |
-|8. Planning and Learning with Tabular Methods |Not started |              |
+|6. TD Learning                                |Finished    |22/07/2025    |
+|7. n-steps Bootstrapping                      |Finished    |09/08/2025    |
+|8. Planning and Learning with Tabular Methods |Ongoing     |              |
 |9. On-Policy Prediction with Approximation    |Not started |              |
 |10. On-Policy Control with Approximation      |Not started |              |
 |11. Off-Policy Methods with Approximation     |Not started |              |
