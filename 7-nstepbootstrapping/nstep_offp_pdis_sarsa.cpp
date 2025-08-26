@@ -66,6 +66,20 @@ float**** initializeQTable(){
     return qTable;
 }
 
+float*** initializeVTable(){
+    float*** vTable = new float*** [WIDTH];
+    for(int i = 0; i < WIDTH; i++){ //width WIDTH
+        vTable[i] = new float* [HEIGHT];
+        for(int j = 0; j < HEIGHT; j++){ //height HEIGHT
+            vTable[i][j] = new float[2];
+            for(int k = 0; k < 2; k++){ //has_key (binary)
+                vTable[i][j][k] = 0.0;
+            }   
+        }
+    }
+    return vTable;
+}
+
 int getActionSoftmaxPol(*float qTableRow){
     float sum_e_qval = 0;
 
@@ -177,10 +191,95 @@ Timestep* createTimestep(int x, int y){
     return timeStep;
 }
 
+void addTimestepVector(std::vector<Timestep*>* episode, Timestep* timestep){
+    episode->push_back(timestep);
+    if(episode->size() > N){
+        episode->erase(episode->begin());
+    }
+}
+
+float getPolicyActionStateProb(int policy, Timestep* timestep, float**** qTable){
+    switch(policy){
+    case 0://greedy
+        int bestAction = -1;
+        float bestQValue = -INFINITY;
+
+        for(int i = 0; i < NACTIONS; i++){
+            float qval = qTable[timestep->State.x][timestep->State.y][timestep->State.hasKey][i];
+            if(qval > bestQValue){
+                bestQValue = qval;
+                bestAction = i;
+            }
+        }
+
+        if(timestep->a == bestAction){
+            return 1;
+        }
+        return 0;
+
+    case 1://egreedy
+        int bestAction = -1;
+        float bestQValue = -INFINITY;
+
+        for(int i = 0; i < NACTIONS; i++){
+            float qval = qTable[timestep->State.x][timestep->State.y][timestep->State.hasKey][i];
+            if(qval > bestQValue){
+                bestQValue = qval;
+                bestAction = i;
+            }
+        }
+
+        if(timestep->a == bestAction){
+            return 1-EPSILON;
+        }
+        return EPSILON;
+    
+    case 2://softmax
+        float sum_e_qval = 0;
+
+        for(int i = 0; i < NACTIONS; i++){
+            float qval = qTable[timestep->State.x][timestep->State.y][timestep->State.hasKey][i];
+            sum_e_qval += pow(M_E, qval/TEMPERATURE);
+        }
+
+        float actQVal = qTable[timestep->State.x][timestep->State.y][timestep->State.hasKey][timestep->a];
+        return pow(M_E, actQVal/TEMPERATURE) / sum_e_qval;
+    
+    default:
+        std::cout << "Invalid policy.\n";
+        return;
+    }
+}
+
+float getImpSampRatio(int pBehavior, int pTarget, float**** qTable, int h, std::vector<Timestep*>* episode){
+    float pth = 1.0;
+    for(int i = 0; i < h; i++){ //vector t+n-1 <-> t
+        Timestep* ts = episode.at(N-1-i);
+        pth *= (getPolicyActionStateProb(pTarget,ts,qTable)/getPolicyActionStateProb(pBehavior,ts,qTable));
+    }
+
+    return pth;
+}
+
+void updateStateValue(float**** qTable, float*** vTable, std::vector<Timestep*>* episode, int i,
+                      int pTarget, int pBehavior){
+    if(i < n-1){ //doesnt update terminal states
+        Timestep* ts = episode.at(i); //t+n -> i=
+        Timestep* tsPrev = episode.at(i+1);
+        float* tV = vTable[ts->State.x][ts->State.y][ts->State.hasKey];
+        float* tPrevV = vTable[ts->State.x][ts->State.y][ts->State.hasKey];
+
+        tV = tPrevV + STEPSIZE*getI
+        mpSampRatio(pBehavior, pTarget, qTable, i, episode)
+    }
+}
+
+
 void runEpisode(float**** qTable, int runs){
+    int pBehavior = 1;//0- greedy //1- e-greddy //2- softmax
+    int pTarget = 0;
     for(int run = 0; i < runs; i++){
-        std::queue<Timestep*> nstepBuffer;//NEEDS TO BE A VECTOR. QUEUE DOESNT ALLOW MIDDLE ACCESS
-        //NEW LOGIC NECESSARY TO PUSH ITEMS BACK AND FORTH WHEN ADDING A NEW TIMESTEP
+        std::vector<Timestep*> nstepBuffer;
 
         currTimestep = createTimestep(START_X, START_Y);
 
@@ -190,21 +289,17 @@ void runEpisode(float**** qTable, int runs){
 
         while(t_updt != T - 1){
             if(t < T){
-                Timestep* nextTimestep = walk(currTimestep, qTable, 1)//0- greedy //1- e-greddy //2- softmax
+                Timestep* nextTimestep = walk(currTimestep, qTable, pUsed)
 
                 if(nextTimestep->State.isTerminal){
                     T = t + 1;
                 } else {
-                    nstepBuffer.push(currTimestep);
-                    if(nstepBuffer.size() > N){
-                        Timestep* oldTimestep = nstepBuffer.pop();
-                        delete oldTimestep;
-                    }
+                    addTimestepVector(currentTimestep);
                 }
             }
             t_updt = t - N + 1
             if(t >= 0){
-
+                // Per decision importance sample truncated return will be used
             }
 
             t++;
