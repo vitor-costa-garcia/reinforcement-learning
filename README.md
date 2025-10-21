@@ -11,9 +11,9 @@ This repository is meant to guide my study in reinforcement learning and related
 |5. Monte Carlo Methods                        |Finished    |04/07/2025    |
 |6. TD Learning                                |Finished    |22/07/2025    |
 |7. n-steps Bootstrapping                      |Finished    |09/08/2025    |
-|8. Planning and Learning with Tabular Methods |Ongoing     |              |
-|9. On-Policy Prediction with Approximation    |Not started |              |
-|10. On-Policy Control with Approximation      |Not started |              |
+|8. Planning and Learning with Tabular Methods |Finished    |no idea       |
+|9. On-Policy Prediction with Approximation    |Finished    |20/10/2025    |
+|10. On-Policy Control with Approximation      |Ongoing     |              |
 |11. Off-Policy Methods with Approximation     |Not started |              |
 |12. Eligibility Traces                        |Not started |              |
 |13. Policy Gradient Methods                   |Not started |              |
