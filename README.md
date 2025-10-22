@@ -13,9 +13,9 @@ This repository is meant to guide my study in reinforcement learning and related
 |7. n-steps Bootstrapping                      |Finished    |09/08/2025    |
 |8. Planning and Learning with Tabular Methods |Finished    |no idea       |
 |9. On-Policy Prediction with Approximation    |Finished    |20/10/2025    |
-|10. On-Policy Control with Approximation      |Ongoing     |              |
-|11. Off-Policy Methods with Approximation     |Not started |              |
-|12. Eligibility Traces                        |Not started |              |
+|10. On-Policy Control with Approximation      |Finished    |22/10/2025    |
+|11. Off-Policy Methods with Approximation     |Not started |skipped       |
+|12. Eligibility Traces                        |Ongoing     |              |
 |13. Policy Gradient Methods                   |Not started |              |
 |14. Psychology                                |Not started |              |
 |15. Neuroscience                              |Not started |              |
